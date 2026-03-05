@@ -1,0 +1,22 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+
+# Virtual env
+backend/venv/
+.venv/
+venv/
+
+# Environment vars
+.env
+backend/.env
+
+# Database
+*.db
+backend/mindalpha.db
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,979 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindAlpha MVP</title>
+    <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --card: #121a2e;
+        --text: #e7ecff;
+        --muted: #9db0ff;
+        --accent: #38bdf8;
+        --danger: #ef4444;
+        --ok: #22c55e;
+        --warn: #f59e0b;
+        --line: #324a8f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "PingFang SC", sans-serif;
+        background: radial-gradient(circle at top right, #1f2a4c, var(--bg));
+        color: var(--text);
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 24px auto;
+        padding: 16px;
+        display: grid;
+        gap: 16px;
+      }
+
+      .card {
+        background: linear-gradient(135deg, #121a2e, #17213e);
+        border: 1px solid #2b3e78;
+        border-radius: 16px;
+        padding: 18px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+      }
+
+      h1 {
+        margin: 0;
+      }
+
+      h2 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 20px;
+      }
+
+      p {
+        color: var(--muted);
+        margin-top: 6px;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .market-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 12px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+      }
+
+      .stat {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        background: rgba(15, 23, 48, 0.85);
+      }
+
+      .stat-label {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .stat-value {
+        margin-top: 6px;
+        font-size: 20px;
+        font-weight: 700;
+      }
+
+      .book-panel {
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 10px;
+        background: rgba(15, 23, 48, 0.85);
+      }
+
+      .book-title {
+        margin: 0 0 10px;
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      th,
+      td {
+        text-align: right;
+        padding: 4px 6px;
+      }
+
+      th {
+        color: var(--muted);
+        font-weight: 500;
+      }
+
+      .ask-row td:first-child {
+        color: #fda4af;
+      }
+
+      .bid-row td:first-child {
+        color: #86efac;
+      }
+
+      #klineChart {
+        width: 100%;
+        height: 360px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+
+      label {
+        display: block;
+        margin: 12px 0 6px;
+      }
+
+      input,
+      textarea,
+      select,
+      button {
+        width: 100%;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        padding: 12px;
+        font-size: 15px;
+      }
+
+      input,
+      textarea,
+      select {
+        color: var(--text);
+        background: #0f1730;
+      }
+
+      textarea {
+        min-height: 92px;
+        resize: vertical;
+      }
+
+      .inline-check {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 10px;
+        color: var(--muted);
+      }
+
+      .inline-check input {
+        width: auto;
+        margin: 0;
+      }
+
+      button {
+        margin-top: 14px;
+        background: linear-gradient(90deg, #2563eb, var(--accent));
+        color: white;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .danger-btn {
+        background: linear-gradient(90deg, #b91c1c, #ef4444);
+      }
+
+      button:hover {
+        filter: brightness(1.08);
+      }
+
+      .result {
+        margin-top: 16px;
+        background: #0e1630;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 12px;
+        white-space: pre-wrap;
+        word-break: break-word;
+        min-height: 84px;
+      }
+
+      .error {
+        color: #fecaca;
+        border-color: #7f1d1d;
+        background: rgba(127, 29, 29, 0.35);
+      }
+
+      .ws-status {
+        font-size: 13px;
+        margin-top: 8px;
+        color: var(--muted);
+      }
+
+      .ws-status.ok {
+        color: var(--ok);
+      }
+
+      .ws-status.warn {
+        color: var(--warn);
+      }
+
+      .report-highlight {
+        margin-top: 12px;
+        padding: 12px;
+        border-radius: 10px;
+        background: rgba(56, 189, 248, 0.12);
+        border: 1px solid rgba(56, 189, 248, 0.45);
+        color: #d9f2ff;
+        font-size: 16px;
+      }
+
+      .overlay {
+        position: fixed;
+        inset: 0;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        background: rgba(127, 29, 29, 0.78);
+        z-index: 9999;
+        backdrop-filter: blur(4px);
+      }
+
+      .overlay.active {
+        display: flex;
+      }
+
+      .overlay-card {
+        width: min(92vw, 760px);
+        background: linear-gradient(145deg, #2a0e0e, #5f1313);
+        border: 1px solid #fecaca;
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+      }
+
+      .overlay-card h3 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 30px;
+        letter-spacing: 1px;
+      }
+
+      .overlay-card p {
+        margin: 6px 0 0;
+        color: #fee2e2;
+        font-size: 18px;
+        line-height: 1.7;
+      }
+
+      .overlay-close {
+        margin-top: 18px;
+        max-width: 260px;
+        background: #fee2e2;
+        color: #7f1d1d;
+      }
+
+      @media (max-width: 980px) {
+        .market-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 720px) {
+        .grid,
+        .stats-grid {
+          grid-template-columns: 1fr;
+        }
+
+        .overlay-card h3 {
+          font-size: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>MindAlpha MVP 控制台</h1>
+        <p>
+          阶段一 + 二 + 三 + 行情现场快照：规则解析、实时行情、违规拦截、心理画像、知行报告。
+        </p>
+
+        <div class="grid">
+          <div>
+            <label for="apiBase">API 地址</label>
+            <input id="apiBase" value="http://127.0.0.1:8000" />
+          </div>
+          <div>
+            <label for="userId">用户 ID</label>
+            <input id="userId" value="alan-demo" />
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>实时行情（Binance 公共 WebSocket）</h2>
+        <p>用于捕捉“违规下单瞬间”的犯罪现场快照，并随订单一起入库 ActionLog。</p>
+
+        <div class="grid">
+          <div>
+            <label for="symbol">交易对 Symbol</label>
+            <input id="symbol" value="BTCUSDT" />
+          </div>
+          <div>
+            <label for="price">下单价格（为空时自动使用实时价）</label>
+            <input id="price" value="" placeholder="自动使用实时价格" />
+          </div>
+        </div>
+
+        <button id="connectMarketBtn">连接/重连实时行情</button>
+        <div id="wsStatus" class="ws-status warn">行情未连接</div>
+
+        <div class="market-grid" style="margin-top: 12px">
+          <div>
+            <div class="stats-grid" style="margin-bottom: 10px">
+              <div class="stat">
+                <div class="stat-label">最新成交价</div>
+                <div id="lastPrice" class="stat-value">-</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">最优买 / 卖</div>
+                <div id="bestBidAsk" class="stat-value">-</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">盘口价差</div>
+                <div id="spread" class="stat-value">-</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">前5档买量</div>
+                <div id="topBidVolume" class="stat-value">-</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">前5档卖量</div>
+                <div id="topAskVolume" class="stat-value">-</div>
+              </div>
+              <div class="stat">
+                <div class="stat-label">快照时间</div>
+                <div id="snapshotTime" class="stat-value" style="font-size: 14px">-</div>
+              </div>
+            </div>
+            <div id="klineChart"></div>
+          </div>
+
+          <div class="book-panel">
+            <p class="book-title">实时订单簿（Depth 20 @100ms）</p>
+            <table>
+              <thead>
+                <tr>
+                  <th>卖价</th>
+                  <th>卖量</th>
+                </tr>
+              </thead>
+              <tbody id="asksBody"></tbody>
+            </table>
+            <hr style="border-color: var(--line); opacity: 0.4" />
+            <table>
+              <thead>
+                <tr>
+                  <th>买价</th>
+                  <th>买量</th>
+                </tr>
+              </thead>
+              <tbody id="bidsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>1) 规则解析入库</h2>
+        <label for="rawText">自然语言规则</label>
+        <textarea id="rawText">若累计亏损达到200美元，立刻LOCK_ACCOUNT，不允许继续买入。</textarea>
+
+        <button id="parseBtn">解析并保存规则</button>
+        <div id="parseResult" class="result">等待请求...</div>
+      </div>
+
+      <div class="card">
+        <h2>2) 模拟下单与拦截</h2>
+
+        <div class="grid">
+          <div>
+            <label for="actionType">动作</label>
+            <select id="actionType">
+              <option value="BUY" selected>BUY</option>
+              <option value="SELL">SELL</option>
+            </select>
+          </div>
+          <div>
+            <label for="lossUsd">累计亏损 USD</label>
+            <input id="lossUsd" value="250" />
+          </div>
+        </div>
+
+        <label class="inline-check">
+          <input id="autoPrice" type="checkbox" checked />
+          下单时自动使用最新实时价格
+        </label>
+
+        <label for="note">行为描述</label>
+        <input id="note" value="亏损已达250刀，试图继续买入" />
+
+        <label for="snapshotJson">补充快照 JSON（可选，会合并到实时快照）</label>
+        <textarea id="snapshotJson">{"RSI": 81, "change_percent": 5.8, "volatility": "high"}</textarea>
+
+        <button id="orderBtn" class="danger-btn">发起 Mock 下单（携带实时市场快照）</button>
+        <div id="orderResult" class="result">等待请求...</div>
+      </div>
+
+      <div class="card">
+        <h2>3) 今日知行合一报告</h2>
+        <p>基于 ActionLog 与 UserPsychProfile 自动生成今日复盘。</p>
+
+        <button id="reportBtn">生成今日报告</button>
+        <div id="reportSummary" class="report-highlight">等待生成...</div>
+        <div id="reportResult" class="result">等待请求...</div>
+      </div>
+    </div>
+
+    <div id="interceptOverlay" class="overlay" aria-hidden="true">
+      <div class="overlay-card">
+        <h3 id="alertTitle">检测到FOMO情绪</h3>
+        <p id="alertMessage">您正在试图违背交易纪律，系统已拦截。</p>
+        <button id="closeOverlayBtn" class="overlay-close">我知道了，取消这笔冲动交易</button>
+      </div>
+    </div>
+
+    <script>
+      const BINANCE_REST_BASE = "https://api.binance.com";
+      const BINANCE_WS_BASE = "wss://stream.binance.com:9443/stream";
+
+      const parseBtn = document.getElementById("parseBtn");
+      const orderBtn = document.getElementById("orderBtn");
+      const reportBtn = document.getElementById("reportBtn");
+      const connectMarketBtn = document.getElementById("connectMarketBtn");
+      const parseResult = document.getElementById("parseResult");
+      const orderResult = document.getElementById("orderResult");
+      const reportResult = document.getElementById("reportResult");
+      const reportSummary = document.getElementById("reportSummary");
+
+      const wsStatus = document.getElementById("wsStatus");
+      const lastPriceEl = document.getElementById("lastPrice");
+      const bestBidAskEl = document.getElementById("bestBidAsk");
+      const spreadEl = document.getElementById("spread");
+      const topBidVolumeEl = document.getElementById("topBidVolume");
+      const topAskVolumeEl = document.getElementById("topAskVolume");
+      const snapshotTimeEl = document.getElementById("snapshotTime");
+      const asksBody = document.getElementById("asksBody");
+      const bidsBody = document.getElementById("bidsBody");
+
+      const overlay = document.getElementById("interceptOverlay");
+      const alertTitle = document.getElementById("alertTitle");
+      const alertMessage = document.getElementById("alertMessage");
+      const closeOverlayBtn = document.getElementById("closeOverlayBtn");
+
+      const marketState = {
+        ws: null,
+        reconnectTimer: null,
+        reconnectAttempts: 0,
+        symbol: "BTCUSDT",
+        wsConnected: false,
+        lastPrice: null,
+        lastTradeQty: null,
+        lastTradeSide: null,
+        lastTradeTs: null,
+        lastKline: null,
+        depth: { bids: [], asks: [], updatedAtMs: null },
+        chart: null,
+        candleSeries: null,
+      };
+
+      function normalizeSymbol(raw) {
+        return String(raw || "")
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "");
+      }
+
+      function formatNumber(value, digits = 2) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
+          return "-";
+        }
+        return Number(value).toLocaleString(undefined, {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      }
+
+      function formatTime(ms) {
+        if (!ms) {
+          return "-";
+        }
+        return new Date(ms).toLocaleTimeString();
+      }
+
+      function sumQty(levels, n = 5) {
+        return levels
+          .slice(0, n)
+          .reduce((acc, item) => acc + (Number(item.qty) || 0), 0);
+      }
+
+      function setResult(target, value, isError = false) {
+        target.classList.remove("error");
+        if (isError) {
+          target.classList.add("error");
+        }
+        target.textContent = typeof value === "string" ? value : JSON.stringify(value, null, 2);
+      }
+
+      function setWsStatus(text, tone = "warn") {
+        wsStatus.textContent = text;
+        wsStatus.classList.remove("ok", "warn");
+        wsStatus.classList.add(tone);
+      }
+
+      function ensureChart() {
+        if (marketState.chart) {
+          return;
+        }
+
+        const container = document.getElementById("klineChart");
+        const chart = LightweightCharts.createChart(container, {
+          width: container.clientWidth,
+          height: 360,
+          layout: {
+            background: { color: "#0f1730" },
+            textColor: "#9db0ff",
+          },
+          grid: {
+            vertLines: { color: "rgba(50,74,143,0.35)" },
+            horzLines: { color: "rgba(50,74,143,0.35)" },
+          },
+          rightPriceScale: {
+            borderColor: "rgba(50,74,143,0.5)",
+          },
+          timeScale: {
+            borderColor: "rgba(50,74,143,0.5)",
+            timeVisible: true,
+            secondsVisible: false,
+          },
+        });
+
+        const candleSeries = chart.addCandlestickSeries({
+          upColor: "#22c55e",
+          downColor: "#ef4444",
+          wickUpColor: "#22c55e",
+          wickDownColor: "#ef4444",
+          borderVisible: false,
+        });
+
+        marketState.chart = chart;
+        marketState.candleSeries = candleSeries;
+
+        window.addEventListener("resize", () => {
+          chart.applyOptions({ width: container.clientWidth });
+        });
+      }
+
+      function renderOrderBook() {
+        const asks = marketState.depth.asks.slice(0, 10);
+        const bids = marketState.depth.bids.slice(0, 10);
+
+        asksBody.innerHTML = asks
+          .map(
+            (row) =>
+              `<tr class="ask-row"><td>${formatNumber(row.price, 2)}</td><td>${formatNumber(row.qty, 4)}</td></tr>`
+          )
+          .join("");
+
+        bidsBody.innerHTML = bids
+          .map(
+            (row) =>
+              `<tr class="bid-row"><td>${formatNumber(row.price, 2)}</td><td>${formatNumber(row.qty, 4)}</td></tr>`
+          )
+          .join("");
+
+        const bestBid = bids[0] ? Number(bids[0].price) : null;
+        const bestAsk = asks[0] ? Number(asks[0].price) : null;
+        const spread =
+          bestBid !== null && bestAsk !== null ? Number((bestAsk - bestBid).toFixed(2)) : null;
+
+        bestBidAskEl.textContent =
+          bestBid !== null && bestAsk !== null
+            ? `${formatNumber(bestBid, 2)} / ${formatNumber(bestAsk, 2)}`
+            : "-";
+        spreadEl.textContent = spread !== null ? formatNumber(spread, 2) : "-";
+        topBidVolumeEl.textContent = formatNumber(sumQty(bids, 5), 4);
+        topAskVolumeEl.textContent = formatNumber(sumQty(asks, 5), 4);
+        snapshotTimeEl.textContent = formatTime(marketState.depth.updatedAtMs || marketState.lastTradeTs);
+      }
+
+      function buildWsUrl(symbol) {
+        const s = symbol.toLowerCase();
+        return `${BINANCE_WS_BASE}?streams=${s}@trade/${s}@depth20@100ms/${s}@kline_1m`;
+      }
+
+      async function loadInitialKlines(symbol) {
+        const url = `${BINANCE_REST_BASE}/api/v3/klines?symbol=${symbol}&interval=1m&limit=240`;
+        const resp = await fetch(url);
+        if (!resp.ok) {
+          throw new Error(`加载初始K线失败: ${resp.status}`);
+        }
+
+        const raw = await resp.json();
+        const rows = raw.map((k) => ({
+          time: Math.floor(Number(k[0]) / 1000),
+          open: Number(k[1]),
+          high: Number(k[2]),
+          low: Number(k[3]),
+          close: Number(k[4]),
+        }));
+
+        marketState.candleSeries.setData(rows);
+      }
+
+      function scheduleReconnect() {
+        if (marketState.reconnectTimer) {
+          clearTimeout(marketState.reconnectTimer);
+        }
+
+        const delayMs = Math.min(1500 + marketState.reconnectAttempts * 600, 8000);
+        marketState.reconnectTimer = setTimeout(() => {
+          connectMarket();
+        }, delayMs);
+      }
+
+      function handleTradeEvent(data) {
+        const price = Number(data.p);
+        const qty = Number(data.q);
+        const ts = Number(data.T || Date.now());
+
+        marketState.lastPrice = price;
+        marketState.lastTradeQty = qty;
+        marketState.lastTradeSide = data.m ? "SELL_AGGRESSOR" : "BUY_AGGRESSOR";
+        marketState.lastTradeTs = ts;
+
+        lastPriceEl.textContent = formatNumber(price, 2);
+
+        const autoPrice = document.getElementById("autoPrice").checked;
+        if (autoPrice) {
+          document.getElementById("price").value = price.toFixed(2);
+        }
+
+        if (!marketState.depth.updatedAtMs) {
+          snapshotTimeEl.textContent = formatTime(ts);
+        }
+      }
+
+      function handleDepthEvent(data) {
+        marketState.depth = {
+          bids: (data.bids || []).map((x) => ({ price: Number(x[0]), qty: Number(x[1]) })),
+          asks: (data.asks || []).map((x) => ({ price: Number(x[0]), qty: Number(x[1]) })),
+          updatedAtMs: Date.now(),
+        };
+
+        renderOrderBook();
+      }
+
+      function handleKlineEvent(data) {
+        const k = data.k;
+        if (!k) {
+          return;
+        }
+
+        const candle = {
+          time: Math.floor(Number(k.t) / 1000),
+          open: Number(k.o),
+          high: Number(k.h),
+          low: Number(k.l),
+          close: Number(k.c),
+        };
+
+        marketState.candleSeries.update(candle);
+
+        marketState.lastKline = {
+          interval: k.i,
+          open_time: Number(k.t),
+          close_time: Number(k.T),
+          open: Number(k.o),
+          high: Number(k.h),
+          low: Number(k.l),
+          close: Number(k.c),
+          volume: Number(k.v),
+          is_closed: Boolean(k.x),
+        };
+      }
+
+      function handleStreamMessage(raw) {
+        const stream = String(raw.stream || "");
+        const data = raw.data || {};
+
+        if (stream.endsWith("@trade")) {
+          handleTradeEvent(data);
+          return;
+        }
+
+        if (stream.includes("@depth")) {
+          handleDepthEvent(data);
+          return;
+        }
+
+        if (stream.includes("@kline_")) {
+          handleKlineEvent(data);
+        }
+      }
+
+      async function connectMarket() {
+        const symbolInput = document.getElementById("symbol");
+        const symbol = normalizeSymbol(symbolInput.value);
+        if (!symbol) {
+          setWsStatus("Symbol 无效", "warn");
+          return;
+        }
+        symbolInput.value = symbol;
+
+        ensureChart();
+
+        if (marketState.ws) {
+          marketState.ws.close();
+          marketState.ws = null;
+        }
+
+        setWsStatus(`正在连接 ${symbol} 行情流...`, "warn");
+
+        try {
+          await loadInitialKlines(symbol);
+        } catch (error) {
+          setWsStatus(`初始化K线失败：${error.message}`, "warn");
+        }
+
+        marketState.symbol = symbol;
+        const ws = new WebSocket(buildWsUrl(symbol));
+        marketState.ws = ws;
+
+        ws.onopen = () => {
+          marketState.wsConnected = true;
+          marketState.reconnectAttempts = 0;
+          setWsStatus(`已连接 Binance: ${symbol}（trade + depth20@100ms + kline_1m）`, "ok");
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            handleStreamMessage(payload);
+          } catch (error) {
+            setWsStatus(`行情数据解析失败：${error.message}`, "warn");
+          }
+        };
+
+        ws.onerror = () => {
+          setWsStatus("行情流异常，准备重连...", "warn");
+        };
+
+        ws.onclose = () => {
+          marketState.wsConnected = false;
+          marketState.reconnectAttempts += 1;
+          setWsStatus("行情流已断开，自动重连中...", "warn");
+          scheduleReconnect();
+        };
+      }
+
+      function buildRealtimeSnapshot() {
+        const bids = marketState.depth.bids.slice(0, 10);
+        const asks = marketState.depth.asks.slice(0, 10);
+        const bestBid = bids[0] || null;
+        const bestAsk = asks[0] || null;
+        const spread = bestBid && bestAsk ? Number((bestAsk.price - bestBid.price).toFixed(2)) : null;
+
+        return {
+          source: "binance_spot_ws",
+          symbol: marketState.symbol,
+          captured_at: new Date().toISOString(),
+          ws_connected: marketState.wsConnected,
+          last_price: marketState.lastPrice,
+          last_trade: marketState.lastTradeTs
+            ? {
+                price: marketState.lastPrice,
+                qty: marketState.lastTradeQty,
+                aggressor: marketState.lastTradeSide,
+                timestamp: new Date(marketState.lastTradeTs).toISOString(),
+              }
+            : null,
+          best_bid: bestBid ? bestBid.price : null,
+          best_ask: bestAsk ? bestAsk.price : null,
+          spread,
+          top_bid_volume_5: Number(sumQty(bids, 5).toFixed(6)),
+          top_ask_volume_5: Number(sumQty(asks, 5).toFixed(6)),
+          order_book: {
+            updated_at: marketState.depth.updatedAtMs
+              ? new Date(marketState.depth.updatedAtMs).toISOString()
+              : null,
+            bids: bids.map((x) => ({ price: x.price, qty: x.qty })),
+            asks: asks.map((x) => ({ price: x.price, qty: x.qty })),
+          },
+          kline_1m: marketState.lastKline,
+        };
+      }
+
+      function showIntercept(alert) {
+        alertTitle.textContent = alert?.title || "检测到FOMO情绪";
+        alertMessage.textContent =
+          alert?.message || "系统检测到你正在违背纪律，本次交易已被物理级拦截。";
+        overlay.classList.add("active");
+        overlay.setAttribute("aria-hidden", "false");
+      }
+
+      function hideIntercept() {
+        overlay.classList.remove("active");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+
+      async function loadDailyReport() {
+        const apiBase = document.getElementById("apiBase").value.trim();
+        const userId = document.getElementById("userId").value.trim();
+
+        setResult(reportResult, "请求中...");
+
+        try {
+          const resp = await fetch(`${apiBase}/reports/daily/${encodeURIComponent(userId)}`);
+          const data = await resp.json();
+          if (!resp.ok) {
+            throw new Error(data.detail || "请求失败");
+          }
+
+          reportSummary.textContent = data.summary || "暂无总结";
+          setResult(reportResult, data);
+        } catch (error) {
+          reportSummary.textContent = "报告生成失败";
+          setResult(reportResult, `错误: ${error.message}`, true);
+        }
+      }
+
+      closeOverlayBtn.addEventListener("click", hideIntercept);
+      overlay.addEventListener("click", (event) => {
+        if (event.target === overlay) {
+          hideIntercept();
+        }
+      });
+
+      connectMarketBtn.addEventListener("click", connectMarket);
+
+      parseBtn.addEventListener("click", async () => {
+        const apiBase = document.getElementById("apiBase").value.trim();
+        const userId = document.getElementById("userId").value.trim();
+        const rawText = document.getElementById("rawText").value.trim();
+
+        setResult(parseResult, "请求中...");
+
+        try {
+          const resp = await fetch(`${apiBase}/rules/parse`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: userId, raw_text: rawText }),
+          });
+
+          const data = await resp.json();
+          if (!resp.ok) {
+            throw new Error(data.detail || "请求失败");
+          }
+
+          setResult(parseResult, data);
+        } catch (error) {
+          setResult(parseResult, `错误: ${error.message}`, true);
+        }
+      });
+
+      orderBtn.addEventListener("click", async () => {
+        const apiBase = document.getElementById("apiBase").value.trim();
+        const userId = document.getElementById("userId").value.trim();
+        const symbol = normalizeSymbol(document.getElementById("symbol").value.trim());
+        const actionType = document.getElementById("actionType").value.trim();
+        const inputPrice = Number(document.getElementById("price").value.trim());
+        const autoPrice = document.getElementById("autoPrice").checked;
+        const lossUsd = Number(document.getElementById("lossUsd").value.trim());
+        const note = document.getElementById("note").value.trim();
+        const snapshotRaw = document.getElementById("snapshotJson").value.trim();
+
+        let extraSnapshot = {};
+        if (snapshotRaw) {
+          try {
+            extraSnapshot = JSON.parse(snapshotRaw);
+          } catch (error) {
+            setResult(orderResult, "错误: 补充快照不是合法 JSON", true);
+            return;
+          }
+        }
+
+        const realtimeSnapshot = buildRealtimeSnapshot();
+
+        let price = Number.isNaN(inputPrice) ? null : inputPrice;
+        if (autoPrice && realtimeSnapshot.last_price) {
+          price = Number(realtimeSnapshot.last_price);
+          document.getElementById("price").value = price.toFixed(2);
+        }
+
+        const mergedSnapshot = {
+          ...extraSnapshot,
+          ...realtimeSnapshot,
+          realtime_snapshot: realtimeSnapshot,
+        };
+
+        if (!mergedSnapshot.price && price) {
+          mergedSnapshot.price = price;
+        }
+
+        setResult(orderResult, "请求中...");
+
+        try {
+          const payload = {
+            user_id: userId,
+            symbol,
+            action_type: actionType,
+            price,
+            loss_usd: Number.isNaN(lossUsd) ? null : lossUsd,
+            note,
+            market_snapshot: mergedSnapshot,
+          };
+
+          const resp = await fetch(`${apiBase}/trade/mock-order`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await resp.json();
+          if (!resp.ok) {
+            throw new Error(data.detail || "请求失败");
+          }
+
+          setResult(orderResult, data);
+
+          if (data.blocked && data.alert) {
+            showIntercept(data.alert);
+          }
+
+          await loadDailyReport();
+        } catch (error) {
+          setResult(orderResult, `错误: ${error.message}`, true);
+        }
+      });
+
+      reportBtn.addEventListener("click", loadDailyReport);
+
+      connectMarket();
+    </script>
+  </body>
+</html>
